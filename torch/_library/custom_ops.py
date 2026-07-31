@@ -771,20 +771,53 @@ class CustomOpDef:
 
     def _register_fake_dispatcher_impl(self) -> None:
         def fake_impl(*args, **kwargs):
+            from torch._subclasses.fake_tensor import (
+                CppFakeTensorMode,
+                infer_fake_from_real_tensors,
+                propagate_real_tensors,
+            )
+
+            fake_mode = torch._guards.detect_fake_mode((args, kwargs))
             if self._abstract_fn is None:
                 if utils.can_generate_trivial_fake_impl(self._opoverload):
-                    return utils.generate_trivial_fake_impl(
+                    result = utils.generate_trivial_fake_impl(
                         self._opoverload, *args, **kwargs
                     )
-                raise RuntimeError(
-                    f"There was no fake impl registered for {self}. "
-                    f"This is necessary for torch.compile/export/fx tracing to work. "
-                    f"Please use `{self._init_fn.__name__}.register_fake` to add an "
-                    f"fake impl."
+                elif (
+                    isinstance(fake_mode, CppFakeTensorMode)
+                    and fake_mode.propagate_real_tensors
+                    and fake_mode.shape_env is not None
+                ):
+                    return infer_fake_from_real_tensors(
+                        fake_mode, self._opoverload, args, kwargs
+                    )
+                else:
+                    raise RuntimeError(
+                        f"There was no fake impl registered for {self}. "
+                        f"This is necessary for torch.compile/export/fx tracing to work. "
+                        f"Please use `{self._init_fn.__name__}.register_fake` to add an "
+                        f"fake impl."
+                    )
+            else:
+                result = self._abstract_fn(*args, **kwargs)
+            if (
+                isinstance(fake_mode, CppFakeTensorMode)
+                and fake_mode.propagate_real_tensors
+                and not utils.is_builtin(self._opoverload)
+            ):
+                propagated = propagate_real_tensors(
+                    fake_mode, self._opoverload, args, kwargs, [result]
                 )
-            return self._abstract_fn(*args, **kwargs)
+                if propagated is not None:
+                    result = propagated
+            return result
 
-        self._lib._register_fake(self._name, fake_impl, _stacklevel=5)
+        self._lib._register_fake(
+            self._name,
+            fake_impl,
+            _stacklevel=5,
+            handles_cpp_real_tensor_propagation=True,
+        )
 
     def _register_autograd_dispatcher_impl(self) -> None:
         autograd_impl = autograd.make_autograd_impl(self._opoverload, self)

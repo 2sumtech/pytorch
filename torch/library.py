@@ -327,7 +327,15 @@ class Library:
         _defs.add(qualname)
         return result
 
-    def _register_fake(self, op_name, fn, _stacklevel=1, *, allow_override=True):
+    def _register_fake(
+        self,
+        op_name,
+        fn,
+        _stacklevel=1,
+        *,
+        allow_override=True,
+        handles_cpp_real_tensor_propagation=False,
+    ):
         r"""Registers the fake impl for an operator defined in the library."""
 
         source = torch._library.utils.get_source(_stacklevel + 1)
@@ -352,7 +360,11 @@ class Library:
             func_to_register = fn
 
         handle = entry.fake_impl.register(
-            func_to_register, source, lib=self, allow_override=allow_override
+            func_to_register,
+            source,
+            lib=self,
+            allow_override=allow_override,
+            handles_cpp_real_tensor_propagation=handles_cpp_real_tensor_propagation,
         )
         self._registration_handles.append(handle)
 

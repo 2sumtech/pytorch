@@ -18,6 +18,7 @@ class Kernel:
 
     func: Callable
     source: str
+    handles_cpp_real_tensor_propagation: bool = False
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
