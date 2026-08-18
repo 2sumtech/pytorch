@@ -21,6 +21,7 @@
 /tools/autograd/ @albanD @soulitzer
 /torch/nn/ @albanD @jbschlosser @mikaylagawarecki
 /torch/optim/ @albanD @janeyx99
+/torch/foreach/ @janeyx99
 /test/test_public_bindings.py @albanD
 /test/allowlist_for_publicAPI.json @albanD
 /test/forward_backward_compatibility/check_forward_backward_compatibility.py @larryliu0820
@@ -960,6 +961,7 @@ torch/backends/cudnn/ @eqy @syed-ahmed @Aidyn-A
 # /torch/cpu/
 # /torch/distributions/
 # /torch/fft/
+# /torch/foreach/
 # /torch/functional.py
 # /torch/futures/
 # /torch/header_only_apis.txt
